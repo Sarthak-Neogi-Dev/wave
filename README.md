@@ -1,9 +1,15 @@
 # Wave
-This is a fun project where you can control your mouse using your hand.
+This is a fun project where you can control your mouse pointer hands-free.
+
+Latest Version : v0.1.1
 
 ## Features
-For now features are limited and you cannot click but work is being done on adding these features.
+- Move by pinching your hands.
+- Clicking using pinch gesture.
 
-## Upcoming Features
-- Clicking : You will be able to click by pinching you fingers.
-- Improved Tracking : Tracking is somewhat slow and jittery now, but it will be fixed.
+## Guide
+- Moving : To move pinch using your thumb and index finger.
+- Clicking : To click pinch using your thumb and middle finger.
+
+## WARNING!!! : Early Development
+This project is still in early development. Movement is still jittery.
