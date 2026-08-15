@@ -30,7 +30,10 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 options = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_pipe),
     running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=handle_result)
+    result_callback=handle_result,
+    min_hand_detection_confidence = 0.5,
+    min_hand_presence_confidence = 0.1,
+    min_tracking_confidence = 0.1)
 
 # Handling Capture Failure
 if not cap.isOpened():
@@ -62,7 +65,7 @@ with HandLandmarker.create_from_options(options) as landmarker:
                 print(mouse_x," : ",mouse_y)
 
         # Displaying Webcam Feed
-        # cv2.imshow('Webcam Feed', frame)
+        cv2.imshow('Webcam Feed', frame)
 
         # Handling Exit
         if cv2.waitKey(1) & 0xFF == ord('q'):
