@@ -1,13 +1,17 @@
 # Importing Packages
 import pyautogui
-import pyautogui
 import mediapipe as mp
 import cv2
 from mediapipe.tasks.python.vision import HandLandmarkerResult
+import numpy as np
 
 # Setting-up Variables
 model_pipe = "models/hand_landmarker.task"
 lastcallback = None
+pointer_loc = None
+pointer_loc_last = None
+move_sens = 0.5
+move_vector = None
 
 # Setting-up Capture
 cap = cv2.VideoCapture(0)
@@ -57,12 +61,26 @@ with HandLandmarker.create_from_options(options) as landmarker:
         landmarker.detect_async(mp_image, timestamp_ms)
 
         #Moving Mouse
+        mouse_loc = np.array(pyautogui.position())
         if lastcallback and lastcallback.hand_landmarks:
             if lastcallback.hand_landmarks[0]:
-                mouse_x = lastcallback.hand_landmarks[0][8].x * screen_x
-                mouse_y = lastcallback.hand_landmarks[0][8].y * screen_y
-                pyautogui.moveTo(mouse_x,mouse_y)
-                print(mouse_x," : ",mouse_y)
+                index_finger = np.array([lastcallback.hand_landmarks[0][8].x,lastcallback.hand_landmarks[0][8].y])
+                thumb_finger = np.array([lastcallback.hand_landmarks[0][4].x,lastcallback.hand_landmarks[0][4].y])
+                dist = np.linalg.norm(index_finger - thumb_finger)
+                if dist < 0.06:
+                    pointer_loc = np.array([lastcallback.hand_landmarks[0][8].x * screen_x,lastcallback.hand_landmarks[0][8].y * screen_y])
+                    if pointer_loc_last is not None:
+                        move_vector = (pointer_loc - pointer_loc_last) * move_sens
+                        mouse_loc = mouse_loc + move_vector
+                        pyautogui.moveTo(mouse_loc[0], mouse_loc[1])
+                    pointer_loc_last = pointer_loc
+                    print(mouse_loc[0], " : ",mouse_loc[1])
+                else:
+                    pointer_loc = None
+                    pointer_loc_last = None
+            else:
+                pointer_loc = None
+                pointer_loc_last = None
 
         # Displaying Webcam Feed
         cv2.imshow('Webcam Feed', frame)
