@@ -1,13 +1,17 @@
 # Importing Packages
 import pyautogui
-import pyautogui
 import mediapipe as mp
 import cv2
 from mediapipe.tasks.python.vision import HandLandmarkerResult
+import numpy as np
 
 # Setting-up Variables
 model_pipe = "models/hand_landmarker.task"
 lastcallback = None
+pointer_loc = None
+pointer_loc_last = None
+move_sens = 1.5
+move_vector = None
 
 # Setting-up Capture
 cap = cv2.VideoCapture(0)
@@ -30,7 +34,10 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 options = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_pipe),
     running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=handle_result)
+    result_callback=handle_result,
+    min_hand_detection_confidence = 0.2,
+    min_hand_presence_confidence = 0.1,
+    min_tracking_confidence = 0.1)
 
 # Handling Capture Failure
 if not cap.isOpened():
@@ -53,13 +60,38 @@ with HandLandmarker.create_from_options(options) as landmarker:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
         landmarker.detect_async(mp_image, timestamp_ms)
 
-        #Moving Mouse
+        # Mouse Control
+        mouse_loc = np.array(pyautogui.position())
         if lastcallback and lastcallback.hand_landmarks:
             if lastcallback.hand_landmarks[0]:
-                mouse_x = lastcallback.hand_landmarks[0][8].x * screen_x
-                mouse_y = lastcallback.hand_landmarks[0][8].y * screen_y
-                pyautogui.moveTo(mouse_x,mouse_y)
-                print(mouse_x," : ",mouse_y)
+                index_finger = np.array([lastcallback.hand_landmarks[0][8].x,lastcallback.hand_landmarks[0][8].y])
+                thumb_finger = np.array([lastcallback.hand_landmarks[0][4].x,lastcallback.hand_landmarks[0][4].y])
+                middle_finger = np.array([lastcallback.hand_landmarks[0][12].x,lastcallback.hand_landmarks[0][12].y])
+                
+                move_dist = np.linalg.norm(index_finger - thumb_finger)
+                click_dist = np.linalg.norm(middle_finger - thumb_finger)
+                
+                # Moving Mouse
+                if move_dist < 0.03:
+                    pointer_loc = np.array([lastcallback.hand_landmarks[0][8].x * screen_x,lastcallback.hand_landmarks[0][8].y * screen_y])
+                    if pointer_loc_last is not None:
+                        move_vector = (pointer_loc - pointer_loc_last) * move_sens
+                        mouse_loc = mouse_loc + move_vector
+                        pyautogui.moveTo(mouse_loc[0], mouse_loc[1], duration=0.1)
+                    pointer_loc_last = pointer_loc
+                else:
+                    pointer_loc = None
+                    pointer_loc_last = None
+
+                # Clicking
+                if click_dist < 0.03:
+                    pyautogui.click(interval=0.1)
+                
+                print(mouse_loc[0], " : ",mouse_loc[1])
+
+            else:
+                pointer_loc = None
+                pointer_loc_last = None
 
         # Displaying Webcam Feed
         # cv2.imshow('Webcam Feed', frame)
